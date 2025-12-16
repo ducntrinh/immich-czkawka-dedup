@@ -41,8 +41,8 @@ async fn process_file_group(
     let mut immich_assets: Vec<immich::Asset> = vec![];
     for file in file_group.iter() {
         let checksum = calculate_file_checksum(&file.path).await?;
-        let immich_asset = immich_service.get_asset_by_checksum(&checksum).await?;
-        immich_assets.push(immich_asset);
+        let immich_asset = immich_service.get_assets_by_checksum(&checksum).await?;
+        immich_assets.extend(immich_asset);
     }
 
     immich_assets.sort_by_key(|a| Reverse(a.created_at));
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let similar_file_groups = czkawka::parse_similar_result(&args.czkawka_output_path)?;
     println!("Number of duplicate groups: {}", similar_file_groups.len());
 
-    let semaphore = Arc::new(Semaphore::new(64));
+    let semaphore = Arc::new(Semaphore::new(args.concurrency));
     let futures: Vec<_> = similar_file_groups
         .iter()
         .map(|file_group| {
@@ -93,7 +93,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for result in results {
         match result {
             Ok(_) => success_count += 1,
-            Err(_) => failure_count += 1,
+            Err(e) => {
+                failure_count += 1;
+                eprintln!("An error occurred: {}", e);
+            }
         }
     }
 

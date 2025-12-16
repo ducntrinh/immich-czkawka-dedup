@@ -47,8 +47,7 @@ pub enum Error {
     #[error("Error when request to Immich API: {0}")]
     Network(#[from] reqwest::Error),
 
-    #[error("Asset is not found on Immich instance")]
-    AssetNotFound,
+
 }
 
 pub struct Service {
@@ -67,7 +66,7 @@ impl Service {
         }
     }
 
-    pub async fn get_asset_by_checksum(&self, checksum: &str) -> Result<Asset, Error> {
+    pub async fn get_assets_by_checksum(&self, checksum: &str) -> Result<Vec<Asset>, Error> {
         let mut url = Url::parse(&self.host)?;
         url.set_path("/api/search/metadata");
 
@@ -84,11 +83,7 @@ impl Service {
 
         let response_json: SearchMetadataResponse = response.json().await?;
 
-        if let Some(asset) = response_json.assets.items.first() {
-            Ok(asset.clone())
-        } else {
-            Err(Error::AssetNotFound)
-        }
+        Ok(response_json.assets.items)
     }
 
     pub async fn delete_assets(&self, ids: Vec<&str>) -> Result<(), Error> {

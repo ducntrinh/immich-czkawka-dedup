@@ -16,4 +16,7 @@ pub struct Cli {
 
     #[clap(long)]
     pub dry_run: bool,
+
+    #[clap(long, default_value = "64")]
+    pub concurrency: usize,
 }
